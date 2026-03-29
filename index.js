@@ -1,85 +1,35 @@
-import mongoose from 'mongoose';
 import express from 'express';
-import studentModel from "./model/studentModel.js";
-
+import cors from 'cors';
+import multer from 'multer';
 const app = express();
+const storage = multer.diskStorage({
+   destination:function(req,file,cb){
+        cb(null,'upload')
+    },
+    filename:function(req,file,cb){
+        cb(null,Date.now() + '-' + file.originalname)
+    }
+})
 
-app.use(express.json());
+const upload = multer({storage});
 
- await mongoose.connect("mongodb://localhost:27017/youtube-app-1").then(()=>{
-    console.log("_____connected________");
- });
 
-app.get("/",async(req,res)=>{
-    const studentData = await studentModel.find()
-    res.send(studentData);
-});
+app.use(cors());
+app.get("/",(req,res)=>{
+    res.send(`
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <input type="file" name="myfile"/>
+           
+            <button>Upload file</button>
+        </form>
+    `)
+})
 
-app.post("/save",async(req,res)=>{
-    
-    console.log(req.body);
-
-    const {name,email,age} = req.body;
-    if(!req.body || !name || !email || !age){
-        return res.send({
-            message:"invalid data",
-            success:false
-        })
-        return false;
-    }   
-    const studentData = await studentModel.create(req.body);
-
+app.post("/upload", upload.single('myfile'), (req, res) => {
     res.send({
-        message:"data stored",
-        success:true,
-        storedInfo:studentData
+        message:'File uploaded successfully',
+        info:req.file
     })
 })
 
-app.put("/update/:id",async(req,res)=>{
-   
-    const id=req.params.id;
-     console.log(req.body,id);
-
-     const studentData = await studentModel.findByIdAndUpdate(id,{...req.body})
-
-    res.send({
-        message:'data updated',
-        success:true,
-        info:null
-    })
-})
-
-app.delete("/delete/:id",async(req,res)=>{
-   
-    const id=req.params.id;
-     
-     const studentData = await studentModel.findByIdAndDelete(id)
-
-    res.send({
-        message:'data deleted',
-        success:true,
-        info:null
-    })
-})
-
-app.listen(3200);
-
-
-
-
-
-// async function dbConnection(){
-//     await mongoose.connect("mongodb://localhost:27017/youtube-app-1");
-//     const schema = mongoose.Schema({
-//         name:String,
-//         email:String,
-//         age:Number,
-//     })
-
-//     const students_model = mongoose.model("students",schema);
-//     const result = await students_model.find();
-//     console.log(result);
-// }
-
-// dbConnection();
+app.listen(3200)
